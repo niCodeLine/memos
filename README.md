@@ -37,7 +37,7 @@ pip install -r requirements.txt
 ### Step 2.3: Configure Environment Variables
 The application looks for environment variables to connect to PostgreSQL.
 They have to be set by editing the .env.example file to your prefered `name` and `password`. It can also stay untouched.
-```
+```python
 POSTGRES_HOST=localhost
 POSTGRES_DB=reminders
 POSTGRES_USER=user # <- your name
@@ -98,7 +98,7 @@ net stop postgresql
 ```
 * Note: The database must be running for the API to work. Make sure the database is no longer being used before stoping it.
 
-Once you are in, create USER and PASSWORD **matching the ones set before at the .env file**.
+Once you are in, create user and password **matching the ones set before at the .env file**.
 ```sql
 -- 1. Create the application user matching your environment setup
 CREATE USER user PASSWORD 'password';
