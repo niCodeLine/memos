@@ -143,8 +143,62 @@ constraints. |
 given ID. |
 | **DELETE**| `/reminders/{id}` | Deletes the specified reminder and returns the
 deleted record payload. |
+
 ### Quick Test Example (Using `curl`)
-```bash
-curl -X POST "http://127.0.0.1:8000/reminders" -H "Content-Type: application/
-json" -d '{"day": 13, "month": 6, "text": "Deploy project to production
-server"}'
+curl -X POST "[http://127.0.0.1:8000/reminders](http://127.0.0.1:8000/reminders)" \
+     -H "Content-Type: application/json" \
+     -d '{"day": 13, "month": 6, "text": "Deploy project to production server"}'
+```"""
+
+html_content = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Raw Markdown README</title>
+    <style>
+        @page {{
+            size: A4;
+            margin: 15mm 12mm;
+            background-color: #f4f6f8;
+        }}
+        body {{
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #232629;
+            margin: 0;
+            padding: 0;
+        }}
+        .header {{
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }}
+        pre {{
+            background-color: #ffffff;
+            border: 1px solid #cbd5e0;
+            padding: 15px;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-radius: 4px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">Contenido en Crudo (Raw Markdown) para tu archivo README.md</div>
+    <pre>{markdown_raw_content}</pre>
+</body>
+</html>"""
+
+# Guardar y compilar a PDF
+with open("raw_readme_markdown.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+HTML("raw_readme_markdown.html").write_pdf("raw_readme_markdown.pdf")
+print("PDF generado correctamente.")
