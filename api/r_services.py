@@ -87,7 +87,7 @@ def create(*, day: int, month: int, text: str):
 
         return SimpleNamespace(
             code = 1, 
-            message = f'Reminder "{text}" saved on {day} - {MONTH_NAMES[month]}.',
+            message = f'Reminder "{text}" saved for {day} - {MONTH_NAMES[month]}.',
             reminder_id = reminder_id,
         )
     

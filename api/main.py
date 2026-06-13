@@ -21,9 +21,10 @@ async def root():
     logger.info("root endpoint accessed")
 
     return {
-        "message": "API running" # agregar como una documentacion
+        "message": "API running.", # agregar un tipo de documentacion
+        "docs": "Find documentationn at /docs"
     }
 logger.debug('api set and runnning')
 
 app.include_router(reminders_router)
-logger.info('API starts running')
+logger.info('API re-running')

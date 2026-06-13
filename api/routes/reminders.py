@@ -4,6 +4,10 @@ This 'routes' folder is created for scalability, in case of bigger inspiration.
 Sending the requests to the database\'s service.
 '''
 
+# NOTE
+# "schemas" is used when data comes from the body of the requests (POST).
+# While "Query" is used when data is coming from in the URL (GET).
+
 from fastapi import APIRouter, Query
 from api.schemas import *
 import api.log as log
