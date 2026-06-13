@@ -2,8 +2,8 @@
 FastAPI - postgreSQL implementation to keep your memo's save.
 
 A robust and lightweight RESTful API built with **FastAPI** and **PostgreSQL** to
-manage your personal reminders, tasks, and memos. It includes automated date
-validation, structured logging, and interactive documentation.
+manage your personal reminders, tasks, and memos.
+
 ## Features
 - **Full CRUD operations** for managing reminders.
 - **Strict Date Validation**: Prevents assigning non-existent days to specific
@@ -13,50 +13,91 @@ months (e.g., February 30th or September 31st).
 - **Flexible Network Exposure**: Instructions to run locally, across your home
 network (LAN), or globally (WAN).
 ---
+
+
+
 ## 1. Prerequisites
 Before getting started, ensure you have the following installed on your local
 machine:
 - **Python 3.10** or higher.
-- **PostgreSQL Database Server**.
+- **PostgreSQL Database Server** (shown how to build one in Steps 3).
 ---
+
+
 ## 2. Installation & Environment Setup
-### Step 2.1: Clone the Repository & Create a Virtual Environment
-```bash
-# Clone the project (or navigate to its folder)
-cd reminders-api
-# Create a virtual environment
-python -m venv venv
-# Activate the virtual environment
-# On Windows (CMD):
-venv\Scripts\activate
-# On Windows (PowerShell):
-.\\venv\\Scripts\\Activate.ps1
-# On macOS/Linux:
-source venv/bin/activate
-```
-### Step 2.2: Install Dependencies
+Clone or download de project and navigate to the folder.
+If prefered, a virtual environment can be created via `python -m venv venv` in its propper folder.
+If that's the case, make sure to have it activated to proceed.
+
+### Step 2.1: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Step 2.3: Configure Environment Variables
-The application looks for environment variables to connect to PostgreSQL. If they
-are not found, it falls back to the default values inside `api/env_ignore.py`.
-You can set them in your terminal session or create a `.env` file in the root
-directory:
-```env
+The application looks for environment variables to connect to PostgreSQL.
+They have to be set by editing the .env.example file to your prefered `name` and `password`:
+```
 POSTGRES_HOST=localhost
 POSTGRES_DB=reminders
-POSTGRES_USER=test
-POSTGRES_PASSWORD=pass
+POSTGRES_USER=name # <- your name
+POSTGRES_PASSWORD=password # <- your password
 POSTGRES_PORT=5432
+```
+*Avoid changing the other variables.*
+
+Change the file name to `.env`, or create it with:
+```bash
+cp .env.example .env
 ```
 
 ---
 ## 3. Database Initialization (Crucial Step)
-Before booting up the API server, you must manually create the database shell and
-then run the database setup/schema creation script.
-### Step 3.1: Create the Empty Database
+Before booting up the API server, the database must be created.
+
+### Step 3.1: Running and Createing the Empty Database
+When postgresql is installed continue with ur OS:
+#### macOS
+Inizialize:
+```bash
+brew services start postgresql
+```
+Enter:
+```bash
+psql postgres
+```
+Stop:
+```bash
+brew services stop postgresql
+```
+#### Linux
+Inizialize:
+```bash
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+Enter:
+```bash
+sudo -u postgres psql
+```
+Stop:
+```bash
+sudo systemctl stop postgresql
+```
+#### Windows
+```bash
+net start postgresql
+```
+Enter:
+```bash
+psql -U postgres
+```
+Stop:
+```bash
+net stop postgresql
+```
+* Note: The database must be running for the API to work. Make sure the database is no longer being used before stoping it.
+
 Log into your PostgreSQL instance (via `psql` or a graphical client like pgAdmin/
 DBeaver) using an administrative account and run:
 ```sql
