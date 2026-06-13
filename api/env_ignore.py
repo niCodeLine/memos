@@ -1,0 +1,9 @@
+from api.constants import MAIN_REMINDERS_TABLE
+POSTGRES_HOST = 'localhost'
+POSTGRES_DB = MAIN_REMINDERS_TABLE
+POSTGRES_USER = 'test'
+POSTGRES_PASSWORD = 'pass'
+POSTGRES_PORT = '5432'
+
+APP_DATABASE = 'reminders'
+ADMIN_DATABASE = 'postgres'

@@ -1,0 +1,1 @@
+MAIN_REMINDERS_TABLE = 'reminders'
