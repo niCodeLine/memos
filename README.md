@@ -1,32 +1,28 @@
 # memos
-FastAPI - postgreSQL implementation to keep your memo's save.
+FastAPI - PostgreSQL implementation to keep your memos save.
 
 A robust and lightweight RESTful API built with **FastAPI** and **PostgreSQL** to
 manage your personal reminders, tasks, and memos.
+This project is made for higher scalability (Docker and virtual assistant integrations).
 
 ## Features
 - **Full CRUD operations** for managing reminders.
-- **Strict Date Validation**: Prevents assigning non-existent days to specific
-months (e.g., February 30th or September 31st).
-- **Environment Driven**: Fully configurable via environment variables
-(`os.getenv`).
-- **Flexible Network Exposure**: Instructions to run locally, across your home
-network (LAN), or globally (WAN).
+- **Strict Date Validation**: Prevents assigning non-existent days to months.
+- **Flexible Network Exposure**: Instructions to run locally or across your home
+network (LAN).
 ---
 
 
-
-## 1. Prerequisites
-Before getting started, ensure you have the following installed on your local
-machine:
-- **Python 3.10** or higher.
-- **PostgreSQL Database Server** (shown how to build one in Steps 3).
+## 1. Prerequisites 📦
+Before starting, ensure you have:
+- **Python 3.10+**
+- **PostgreSQL** installed and running (shown how to set up one on Step 3)
 ---
 
 
-## 2. Installation & Environment Setup
-Clone or download de project and navigate to the folder.
-If prefered, a virtual environment can be created via `python -m venv venv` in its propper folder.
+## 2. Installation & Setup ⚙️
+Clone this repository and move into its folder.
+If preferred, a virtual environment can be created by running `python -m venv venv` in the repository folder.
 If that's the case, make sure to have it activated to proceed.
 
 ### Step 2.1: Install Dependencies
@@ -34,9 +30,9 @@ If that's the case, make sure to have it activated to proceed.
 pip install -r requirements.txt
 ```
 
-### Step 2.3: Configure Environment Variables
-The application looks for environment variables to connect to PostgreSQL.
-They have to be set by editing the .env.example file to your prefered `name` and `password`. It can also stay untouched.
+### Step 2.3: Configure Environment Variables 🔐
+The application reads configuration from `.env`.
+Create it from the `.env.example` template and edit it to your preferred `name` and `password`. It can also be left untouched.
 ```python
 POSTGRES_HOST=localhost
 POSTGRES_DB=reminders
@@ -52,18 +48,15 @@ cp .env.example .env
 ```
 
 ---
-## 3. Database Initialization (Crucial Step)
+## 3. Database Setup (Crucial Step) 🗄️
 Before booting up the API server, the database must be created.
 
-### Step 3.1: Running and Createing the Database
-When postgresql is installed continue with ur OS:
+### Step 3.1: Running and Creating the Database
+When postgresql is installed, start it depending on your OS:
 #### macOS
-Inizialize:
+Initialize:
 ```bash
 brew services start postgresql
-```
-Enter:
-```bash
 psql postgres
 ```
 Stop:
@@ -71,13 +64,10 @@ Stop:
 brew services stop postgresql
 ```
 #### Linux
-Inizialize:
+Initialize:
 ```bash
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
-```
-Enter:
-```bash
 sudo -u postgres psql
 ```
 Stop:
@@ -85,58 +75,56 @@ Stop:
 sudo systemctl stop postgresql
 ```
 #### Windows
+Initialize:
 ```bash
 net start postgresql
-```
-Enter:
-```bash
 psql -U postgres
 ```
 Stop:
 ```bash
 net stop postgresql
 ```
-* Note: The database must be running for the API to work. Make sure the database is no longer being used before stoping it.
+* Note: The database must be running for the API to work. Ensure it is not in use before stopping it.
 
-Once you are in, create user and password **matching the ones set before at the .env file**.
+Once you are in, create a user and password **matching the ones set in the `.env` file**.
+
 ```sql
 -- 1. Create the application user matching your environment setup
-CREATE USER user PASSWORD 'password';
--- 2. Create the target database owned by this user
-CREATE DATABASE reminders OWNER test;
--- 3. Grant administrative schema rights
+CREATE USER user WITH PASSWORD 'password';
+
+-- 2. Create the database owned by this user
+CREATE DATABASE reminders OWNER user;
+
+-- 3. Grant privileges to the user
 GRANT ALL PRIVILEGES ON DATABASE reminders TO user;
 ```
 ---
 
 
-## 4. Running the Application
-For importing reliability, always trigger Uvicorn from the directory containing the
+## 4. Running the API ▶️
+For improved reliability, always start Uvicorn from the directory containing the
 `api/` folder.
 
-*(Note: Ensure your database server is running and the credentials match your
+*(Note: Ensure PostgreSQL is running and the credentials match your
 environment settings).*
 
 ### Mode A: Local Development
-API only accessible from your own computer.
+API is only accessible from your own computer.
 ```bash
 uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 ### Mode B: Home Network Access
-API accessible to any device connected to the **same Wi-Fi network**.
+API is accessible to any device connected to the **same Wi-Fi network**.
 ```bash
 uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-
-*To access from your phone, find your PC's local IP address (e.g., `192.168.1.45`
-via `ipconfig` or `ip a`) and navigate to `http://192.168.1.45:8000/docs` in your
-phone's browser.*
+To access from another device, find your local IP address and navigate to it
+adding `:8000` at the end (e.g., `192.168.1.45` -> `http://192.168.1.45:8000`).
 ---
 
 
 ## 6. API Endpoints Reference
-Once running, explore the interactive documentation natively generated at `http://
-127.0.0.1:8000/docs`.
+Once running, explore the interactive documentation natively generated at `/docs`.
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | **GET** | `/` | Base health check. Verifies the server is operational. |
@@ -149,7 +137,9 @@ given ID. |
 | **DELETE**| `/reminders/{id}` | Deletes the specified reminder and returns the
 deleted record payload. |
 
-### Quick Test Example (Using `curl`)
-curl -X POST "[http://127.0.0.1:8000/reminders](http://127.0.0.1:8000/reminders)" \
-     -H "Content-Type: application/json" \
-     -d '{"day": 13, "month": 6, "text": "Deploy project to production server"}'
+### Example Request
+```bash
+curl -X POST "http://127.0.0.1:8000/reminders" \
+-H "Content-Type: application/json" \
+-d '{"day": 13, "month": 6, "text": "Deploy project"}'
+```

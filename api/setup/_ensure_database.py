@@ -5,8 +5,7 @@ Ensure application database exists.
 import psycopg2
 import os
 import api.log as log
-from api.env_ignore import *
-
+from api.settings import settings
 
 logger = log.ger(
     __name__,
@@ -17,15 +16,16 @@ logger = log.ger(
 
 def ensure_database():
 
-    database_name = os.getenv('POSTGRES_DB', APP_DATABASE)
+    database_name = settings.POSTGRES_DB
     logger.debug(f'checking database {database_name}')
 
+    # connect to default DB
     conn = psycopg2.connect(
-        host=os.getenv('POSTGRES_HOST', POSTGRES_HOST),
-        database=ADMIN_DATABASE,
-        user=os.getenv('POSTGRES_USER', POSTGRES_USER),
-        password=os.getenv('POSTGRES_PASSWORD', POSTGRES_PASSWORD),
-        port=os.getenv('POSTGRES_PORT', POSTGRES_PORT),
+        host=settings.POSTGRES_HOST,
+        database='postgres',
+        user=settings.POSTGRES_USER,
+        password=settings.POSTGRES_PASSWORD,
+        port=settings.POSTGRES_PORT,
     )
     
     conn.autocommit = True

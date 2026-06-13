@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from .routes.reminders import router as reminders_router
 import api.log as log
+import api.setup.setup as setup
 
 # setting logger
 logger = log.ger(
@@ -10,10 +12,25 @@ logger = log.ger(
 )
 
 # setting API
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    
+    # executes on startup
+    logger.info("Starting up.")
+
+    # ensure databases and tables are ready
+    setup.main()
+    
+    yield
+    
+    # at shutdown
+    logger.info("Shutting down.")
+
 app = FastAPI(
     title = 'Reminders API',
     description = 'API for managing reminders and memos',
-    version='0.1.0'
+    version='0.2.0',
+    lifespan=lifespan
 )
 
 @app.get("/")
