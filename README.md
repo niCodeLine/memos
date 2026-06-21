@@ -28,8 +28,8 @@ network (LAN).
 ## 1. Prerequisites 📦
 Before starting, ensure you have:
 - **Python 3.10+**
-- **PostgreSQL** installed and running (shown how to set up one on Step 3)
 - **Redis**
+- **PostgreSQL** installed and running (shown how to set up one below)
 ---
 
 
@@ -70,63 +70,77 @@ cp .env.example .env
 Before booting up the API server, the database must be created.
 
 ### Step 3.1: Running and Creating the Database
-When postgresql is installed, start it depending on your OS:
+When postgresql and redis are installed, start the services:
 
 #### macOS
-Initialize:
+Initialize Redis:
+```bash
+brew services start redis
+```
+Stop Redis:
+```bash
+brew services stop redis
+```
+
+Initialize PostgreSQL:
 ```bash
 brew services start postgresql
 psql postgres
 ```
-Stop:
+Stop PostgreSQL:
 ```bash
 brew services stop postgresql
 ```
+
 #### Linux
-Initialize:
+Initialize Redis:
+```bash
+sudo systemctl start redis
+sudo systemctl enable redis
+```
+Stop Redis:
+```bash
+sudo systemctl stop redis
+```
+
+Initialize PostgreSQL:
 ```bash
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 sudo -u postgres psql
 ```
-Stop:
+Stop PostgreSQL:
 ```bash
 sudo systemctl stop postgresql
 ```
+
 #### Windows
-Initialize:
+Initialize Redis:
+```bash
+redis-server
+```
+Stop Redis:
+```bash
+# Use Task Manager or redis-cli shutdown command
+```
+
+Initialize PostgreSQL:
 ```bash
 net start postgresql
 psql -U postgres
 ```
-Stop:
+Stop PostgreSQL:
 ```bash
 net stop postgresql
 ```
 
-#### Start Redis:
-**macOS:**
-```bash
-brew services start redis
-```
-
-**Linux:**
-```bash
-sudo systemctl start redis
-sudo systemctl enable redis
-```
-
-**Windows:**
-```bash
-redis-server
-```
 *Note: Redis can also be started with the command `redis-server` on all 
 platforms if preferred.*
 
 
 * Note: The database must be running for the API to work. Ensure it is not in use before stopping it.
 
-Once you are in, create a user and password **matching the ones set in the `.env` file**.
+Once you are in the PostgreSQL CLI, create a user and password **matching the ones set in the `.env` file**.
 
 ```sql
 -- 1. Create the application user matching your environment setup
@@ -181,5 +195,5 @@ deleted record payload. |
 ```bash
 curl -X POST "http://127.0.0.1:8000/reminders" \
 -H "Content-Type: application/json" \
--d '{"day": 13, "month": 6, "text": "Deploy project"}'
+-d '{"day": 14, "month": 4, "text": "Juanito's birthday"}'
 ```
