@@ -1,16 +1,29 @@
 # memos
-FastAPI - PostgreSQL implementation to keep your memos save.
 
-A robust and lightweight RESTful API built with **FastAPI** and **PostgreSQL** to
-manage your personal reminders, tasks, and memos.
-This project is made for higher scalability (Docker and virtual assistant integrations).
+FastAPI - PostgreSQL (- Redis - ADK) implementation to track your memos.
 
-## Features
-- **Full CRUD operations** for managing reminders.
-- **Strict Date Validation**: Prevents assigning non-existent days to months.
-- **Flexible Network Exposure**: Instructions to run locally or across your home
+A robust and lightweight RESTful API to manage your personal reminders, 
+tasks, and memos.
+This project offers different versions for various needs and scalability 
+requirements.
+
+## Available Versions 📦
+
+### 📦 Basic Version (`main` branch)
+**FastAPI - PostgreSQL implementation**
+- Core RESTful API for memo management
+- Full CRUD operations for reminders
+- Strict Date Validation preventing assigning non-existent days to months.
+- PostgreSQL database integration
+- Flexible Network Exposure with instructions to run locally or across your home
 network (LAN).
----
+
+### 🚀 Enhanced Version (`feature/google-assistant-integration` branch)  
+**FastAPI - PostgreSQL - Redis - Google ADK implementation**
+- All Basic Version features +
+- Google Assistant integration with NLP for memo management
+- Redis caching for improved performance
+- Telegram bot integration capability
 
 
 ## 1. Prerequisites 📦
@@ -42,7 +55,7 @@ POSTGRES_PORT=5432
 ```
 *Avoid changing the other variables.*
 
-Change the file name to `.env`, or create it with:
+Rename the file to `.env`, or create it with:
 ```bash
 cp .env.example .env
 ```
