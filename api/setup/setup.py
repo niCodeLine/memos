@@ -5,6 +5,7 @@ Here databases and tables are assured to be created.
 import api.log as log
 from ._create_tables import create_tables
 from ._ensure_database import ensure_database
+from ._ensure_redis import ensure_redis
 
 logger = log.ger(
     __name__,
@@ -18,6 +19,7 @@ def main():
 
     ensure_database()
     create_tables()
+    ensure_redis()
 
     logger.info('Setup completed successfully.')
 

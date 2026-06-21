@@ -5,7 +5,7 @@
 # INTEGER REFERENCES users(id)
 # when table "users" is implemented.
 
-from api.database import get_connection
+from api.database import get_PG_connection
 import api.log as log
 from api.constants import MAIN_REMINDERS_TABLE
 
@@ -34,8 +34,8 @@ TABLES = {
 
 def create_tables():
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn = get_PG_connection()
+    cursor = conn.cursor() #type: ignore
 
     try:
         for tableName, tableDefinition in TABLES.items():
@@ -49,7 +49,7 @@ def create_tables():
             
             logger.info(f'Table "{tableName}" ready.')
 
-        conn.commit()
+        conn.commit() #type: ignore
         logger.info(f'Tables committed to database.')
     
     except Exception as e:
@@ -58,7 +58,7 @@ def create_tables():
 
     finally:
         cursor.close()
-        conn.close()
+        conn.close() #type: ignore
 
 
 if __name__ == '__main__':

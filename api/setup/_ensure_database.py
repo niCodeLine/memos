@@ -1,9 +1,8 @@
 '''
-Ensure application database exists.
+Ensure that the application database exists.
 '''
 
 import psycopg2
-import os
 import api.log as log
 from api.settings import settings
 
@@ -17,7 +16,7 @@ logger = log.ger(
 def ensure_database():
 
     database_name = settings.POSTGRES_DB
-    logger.debug(f'checking database {database_name}')
+    logger.debug(f'Checking database {database_name}...')
 
     # connect to default DB
     conn = psycopg2.connect(
@@ -26,13 +25,14 @@ def ensure_database():
         user=settings.POSTGRES_USER,
         password=settings.POSTGRES_PASSWORD,
         port=settings.POSTGRES_PORT,
-    )
+        )
     
     conn.autocommit = True
     cursor = conn.cursor()
 
     try:
         # check if application database exists
+
         cursor.execute(
             '''
             SELECT 1
@@ -40,7 +40,7 @@ def ensure_database():
             WHERE datname = %s
             ''',
             (database_name,)
-        )
+            )
         
         exists = cursor.fetchone()
 

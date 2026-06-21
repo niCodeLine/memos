@@ -1,5 +1,5 @@
 '''
-API <-> DataBase interactions.
+API <-> PostgreSQL DataBase interactions.
 
 codes meanings in returns:
 1: OK
@@ -8,7 +8,9 @@ codes meanings in returns:
 
 from types import SimpleNamespace
 import api.log as log
-from api.database import get_connection
+from api.database import get_PG_connection
+from api.routes import reminders
+from api.services_redis import redisGet, redisSet
 from api.constants import MAIN_REMINDERS_TABLE
 
 logger = log.ger(
@@ -46,6 +48,8 @@ MONTH_NAMES = {
     11: "November",
     12: "December"}
 
+def cache_key(reminder_id: int):
+    return f'get_by_id:{reminder_id}'
 
 def create(*, day: int, month: int, text: str):
     '''
@@ -58,7 +62,7 @@ def create(*, day: int, month: int, text: str):
     '''
 
     # connecting with database
-    conn = get_connection()
+    conn = get_PG_connection()
     cursor = conn.cursor()
 
     # checking for valid date
@@ -75,20 +79,31 @@ def create(*, day: int, month: int, text: str):
             INSERT INTO {MAIN_REMINDERS_TABLE}
             (day, month, text)
             VALUES (%s, %s, %s)
-            RETURNING id
+            RETURNING id, created_at
             ''',
             (day, month, text)
         )
         
-        reminder_id = cursor.fetchone()[0]
-        conn.commit()
+        row = cursor.fetchone()     
+        reminder_id = row[0]
+        created_at = row[1]
         
-        logger.debug('Committed succesfully.')
+        conn.commit()
 
+
+        logger.debug('Committed succesfully.')
+        
+        
         return SimpleNamespace(
             code = 1, 
-            message = f'Reminder "{text}" saved for {day} - {MONTH_NAMES[month]}.',
-            reminder_id = reminder_id,
+            message = f'Reminder "{text}" on {day} - {MONTH_NAMES[month]} created at {created_at}, with id {reminder_id}.',
+            reminder = {
+                'reminder_id': reminder_id,
+                'day': day,
+                'month': month,
+                'month_name': MONTH_NAMES[month],
+                'text': text,
+                'created_at': created_at},
         )
     
     except Exception as e:
@@ -98,7 +113,7 @@ def create(*, day: int, month: int, text: str):
         return SimpleNamespace(
             code = 0,
             message = f'Could\'nt create reminder:\n{str(e)}',
-            reminder_id = None,
+            reminder = None,
             )
 
     finally:
@@ -112,8 +127,15 @@ def get_by_id(reminder_id: int):
     Get a reminder from the database by its ID.
     '''
 
+    # try cache first
+    query = cache_key(reminder_id)
+    cached = redisGet(query)
+
+    if cached:
+        return cached
+
     # connecting with database
-    conn = get_connection()
+    conn = get_PG_connection()
     cursor = conn.cursor()
 
     try:
@@ -139,7 +161,7 @@ def get_by_id(reminder_id: int):
         text = row[2]
         created_at = row[3]
         
-        return SimpleNamespace(
+        response = SimpleNamespace(
             code = 1, 
             message = f'Reminder "{text}" on {day} - {MONTH_NAMES[month]} created at {created_at}, found with id {reminder_id}.',
             reminder = {
@@ -150,6 +172,10 @@ def get_by_id(reminder_id: int):
                 'text': text,
                 'created_at': created_at},
             )
+        
+        redisSet(query=query, response=response)
+        
+        return response
     
     except Exception as e:
         conn.rollback()
@@ -174,7 +200,7 @@ def get(day: int | None = None, month: int | None = None, text: str | None = Non
     '''
 
     # connecting with database
-    conn = get_connection()
+    conn = get_PG_connection()
     cursor = conn.cursor()
 
     try:
@@ -251,7 +277,7 @@ def delete(reminder_id: int):
     '''
 
     # connecting with database
-    conn = get_connection()
+    conn = get_PG_connection()
     cursor = conn.cursor()
 
     try:
