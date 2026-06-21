@@ -1,6 +1,6 @@
 # memos
 
-FastAPI - PostgreSQL (- Redis - ADK) implementation to track your memos.
+FastAPI - PostgreSQL - Redis implementation to track your memos.
 
 A robust and lightweight RESTful API to manage your personal reminders, 
 tasks, and memos.
@@ -10,11 +10,11 @@ requirements.
 ## Available Versions 📦
 
 ### 📦 Basic Version (`main` branch)
-**FastAPI - PostgreSQL implementation**
+**FastAPI - PostgreSQL - Redis implementation**
 - Core RESTful API for memo management
 - Full CRUD operations for reminders
 - Strict Date Validation preventing assigning non-existent days to months.
-- PostgreSQL database integration
+- PostgreSQL & Redis database integration
 - Flexible Network Exposure with instructions to run locally or across your home
 network (LAN).
 
@@ -22,7 +22,6 @@ network (LAN).
 **FastAPI - PostgreSQL - Redis - Google ADK implementation**
 - All Basic Version features +
 - Google Assistant integration with NLP for memo management
-- Redis caching for improved performance
 - Bots integration capability
 
 
@@ -30,6 +29,7 @@ network (LAN).
 Before starting, ensure you have:
 - **Python 3.10+**
 - **PostgreSQL** installed and running (shown how to set up one on Step 3)
+- **Redis**
 ---
 
 
@@ -52,6 +52,11 @@ POSTGRES_DB=reminders
 POSTGRES_USER=user # <- your name
 POSTGRES_PASSWORD=password # <- your password
 POSTGRES_PORT=5432
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
 ```
 *Avoid changing the other variables.*
 
@@ -66,6 +71,7 @@ Before booting up the API server, the database must be created.
 
 ### Step 3.1: Running and Creating the Database
 When postgresql is installed, start it depending on your OS:
+
 #### macOS
 Initialize:
 ```bash
@@ -97,6 +103,27 @@ Stop:
 ```bash
 net stop postgresql
 ```
+
+#### Start Redis:
+**macOS:**
+```bash
+brew services start redis
+```
+
+**Linux:**
+```bash
+sudo systemctl start redis
+sudo systemctl enable redis
+```
+
+**Windows:**
+```bash
+redis-server
+```
+*Note: Redis can also be started with the command `redis-server` on all 
+platforms if preferred.*
+
+
 * Note: The database must be running for the API to work. Ensure it is not in use before stopping it.
 
 Once you are in, create a user and password **matching the ones set in the `.env` file**.
