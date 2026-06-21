@@ -23,7 +23,7 @@ network (LAN).
 - All Basic Version features +
 - Google Assistant integration with NLP for memo management
 - Redis caching for improved performance
-- Telegram bot integration capability
+- Bots integration capability
 
 
 ## 1. Prerequisites 📦
