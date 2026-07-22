@@ -1,152 +1,63 @@
 # Remi Base
 
-Remi Base is a small FastAPI backend for saving and managing personal reminders.
-It is designed as the foundation for future assistants, bots and automations.
+Self-hosted reminders API built for quick capture, local storage and optional
+assistant access. FastAPI, PostgreSQL and Redis, kept intentionally small.
 
-The goal of this repository is intentionally modest: provide a clean API layer
-and database access layer that can store reminders reliably. Notification
-workers, users, API keys, delivery channels and richer AI behavior are planned
-as future extensions, not as part of this base version.
+Remi started as a simple place to save reminders from an API or a virtual
+assistant. The base is deliberately plain: store the reminder well first, then
+let other projects decide how to notify, automate or extend it.
 
-## What this project demonstrates
+## Versions
 
-- FastAPI REST API design.
-- PostgreSQL integration as the source of truth.
-- Redis integration as optional read cache.
-- Pydantic request validation.
-- Basic CRUD operations.
-- Clear error handling for invalid dates, missing reminders and database
-  failures.
-- A small optional assistant layer, isolated from the API code, that can call
-  the reminder functions.
-- Unit tests that run without requiring PostgreSQL or Redis.
+- `main` — API + optional assistant layer.
+- `basic` — API, PostgreSQL and Redis only, without the assistant layer.
 
-## Current scope
+## Features
 
-This version can:
+- Quick reminder capture through a REST API.
+- PostgreSQL-backed storage.
+- Optional Redis cache for repeated reads.
+- Basic CRUD operations for reminders.
+- Date validation for impossible month/day combinations.
+- Small assistant layer that calls the same backend logic as the API.
+- Docker Compose file for local PostgreSQL and Redis.
+- Unit tests for routes and service behavior.
 
-- create reminders;
-- list reminders;
-- search reminders by day, month or text;
-- retrieve one reminder by ID;
-- update a reminder;
-- delete a reminder;
-- validate impossible dates, such as April 31;
-- expose those operations through HTTP endpoints;
-- expose optional assistant-compatible functions outside the API package.
+## Quick Start
 
-This version does not yet:
-
-- send notifications;
-- run background workers;
-- mark reminders as sent;
-- support users or profiles;
-- authenticate bots with API keys;
-- choose delivery channels;
-- integrate directly with Telegram, email, webhooks or Alexa.
-
-Those features belong to the next project built on top of this base.
-
-## Architecture
-
-```text
-Client / bot / assistant
-        ↓
-FastAPI routes
-        ↓
-Reminder service layer
-        ↓
-PostgreSQL
-        ↓
-Redis cache, optional
-```
-
-PostgreSQL is the main database. Redis is only used as a cache. If Redis is not
-available, the API should still use PostgreSQL.
-
-## Project structure
-
-```text
-api/
-  main.py              FastAPI application setup
-  routes/reminders.py  HTTP endpoints
-  services_db.py       PostgreSQL reminder operations
-  services_redis.py    Redis cache helpers
-  schemas.py           Request validation models
-  exceptions.py        Project-specific errors
-  setup/               Database/table setup helpers
-
-assistant/
-  agent.py             Optional virtual assistant definition
-  tools.py             Optional assistant tool wrappers
-
-tests/
-  test_routes.py       API route tests
-  test_services.py     Service-level tests
-```
-
-## Requirements
-
-- Python 3.10+
-- PostgreSQL
-- Redis
-
-Redis is recommended but treated as optional cache. PostgreSQL is required.
-
-## Setup
-
-Create a virtual environment if you want one:
-
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
+Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create your local `.env` file:
+Create a local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Default values in `.env.example` match the included `docker-compose.yml`.
-
-## Running PostgreSQL and Redis with Docker
-
-If you have Docker installed, you can start PostgreSQL and Redis with:
+Start PostgreSQL and Redis with Docker:
 
 ```bash
 docker compose up -d
 ```
 
-This starts:
-
-- PostgreSQL on port `5432`;
-- Redis on port `6379`.
-
-Then run the API locally:
+Run the API:
 
 ```bash
 uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-The API documentation will be available at:
+Open:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-## Running without Docker
+## Configuration
 
-Start PostgreSQL and Redis manually, then make sure your `.env` values match
-your local database configuration.
-
-Example `.env`:
+Default `.env.example` values match the included `docker-compose.yml`.
 
 ```text
 POSTGRES_HOST=localhost
@@ -160,13 +71,10 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 ```
 
-Then run:
+PostgreSQL is required. Redis is used as cache; the API is designed to keep
+working from PostgreSQL if Redis is unavailable.
 
-```bash
-uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-## API endpoints
+## API
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -185,20 +93,43 @@ curl -X POST "http://127.0.0.1:8000/reminders/" \
   -d '{"day": 14, "month": 4, "text": "Juanito birthday"}'
 ```
 
-## Assistant layer
+## Assistant
 
-The optional assistant layer lives in `assistant/`.
+The assistant layer lives in `assistant/`.
 
-It defines a virtual assistant named `Remi`, whose tools call the same service
-layer used by the API. This keeps the assistant thin: it interprets natural
-language, while the backend owns the actual reminder behavior.
+`assistant/agent.py` defines Remi, and `assistant/tools.py` exposes the reminder
+operations as assistant-callable tools. The assistant does not own the reminder
+logic; it calls the same service layer used by the API.
 
-This repository keeps the assistant as an optional layer. The API and database
-code can be used without it.
+This keeps the project usable in two ways:
+
+- as a regular reminders API;
+- as a small backend for a virtual assistant.
+
+For the API-only version, use the `basic` branch.
+
+## Structure
+
+```text
+api/
+  main.py              FastAPI application setup
+  routes/reminders.py  HTTP endpoints
+  services_db.py       PostgreSQL reminder operations
+  services_redis.py    Redis cache helpers
+  schemas.py           Request validation models
+  exceptions.py        Project-specific errors
+  setup/               Database/table setup helpers
+
+assistant/
+  agent.py             Optional virtual assistant definition
+  tools.py             Assistant tool wrappers
+
+tests/
+  test_routes.py       API route tests
+  test_services.py     Service-level tests
+```
 
 ## Tests
-
-Run:
 
 ```bash
 python -m unittest discover -v
@@ -207,16 +138,17 @@ python -m unittest discover -v
 The tests mock database operations where needed, so they do not require a
 running PostgreSQL or Redis instance.
 
-## Future direction
+## Roadmap
 
-This repository is the base. A larger project can build on top of it with:
+This repository is the base layer. A larger reminder platform can build on top
+of it with:
 
 - Docker installation for the full application;
-- workers that send due reminders;
-- users, profiles and one local admin;
+- background workers for due reminders;
+- users, profiles and a local admin;
 - API keys for bots and assistant integrations;
 - delivery channels such as Telegram, email, webhooks or Alexa;
-- AI features such as urgency classification, channel selection and suggested
-  reminder times.
+- AI-assisted urgency, channel and time suggestions.
 
-See [docs/NEXT_PROJECT.md](docs/NEXT_PROJECT.md) for the proposed expansion.
+See [docs/NEXT_PROJECT.md](docs/NEXT_PROJECT.md) for the possible expansion.
+
