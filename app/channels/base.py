@@ -1,14 +1,19 @@
+"""Shared types and helpers for delivery channel adapters."""
+
 from dataclasses import dataclass
 
 
 @dataclass
 class DeliveryResult:
+    """Standard result returned by every channel adapter."""
+
     success: bool
     error: str | None = None
 
 
 def reminder_payload(reminder: dict) -> dict:
-    """Return the small payload channel adapters can deliver."""
+    """Build the small payload sent to external notification channels."""
+
     return {
         "id": reminder["id"],
         "text": reminder["text"],

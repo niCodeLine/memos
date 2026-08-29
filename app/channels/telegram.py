@@ -8,6 +8,11 @@ from app.channels.base import DeliveryResult, reminder_payload
 
 
 def send(reminder: dict) -> DeliveryResult:
+    """Demo Telegram sender. Replace this body with real platform code.
+
+    `delivery_target` could be a Telegram chat id.
+    """
+
     payload = reminder_payload(reminder)
     chat_id = reminder.get("delivery_target") or "demo-chat"
 

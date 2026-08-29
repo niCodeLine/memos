@@ -1,3 +1,5 @@
+"""FastAPI application entrypoint for Memo."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +11,8 @@ from app.routers import admin, ai, health, reminders
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Prepare the database schema when the API starts."""
+
     ensure_schema()
     yield
 
@@ -20,6 +24,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Routers keep each concern small: health, admin, enrichment and reminders.
 app.include_router(health.router)
 app.include_router(admin.router)
 app.include_router(ai.router)

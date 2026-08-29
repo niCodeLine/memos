@@ -1,8 +1,20 @@
+"""Database operations for API keys.
+
+The admin token creates and manages keys. Bots and assistants then use those
+keys to call the reminder endpoints through `X-API-Key`.
+"""
+
 from app.core.security import generate_api_token, hash_token
 from app.db.connection import get_connection
 
 
 def create_api_key(*, name: str, scopes: list[str]) -> dict:
+    """Create an API key and return the plain token once.
+
+    The database stores only the hash. If the caller loses the returned token,
+    the safe path is to revoke it and create a new one.
+    """
+
     token = generate_api_token()
     token_hash = hash_token(token)
 
@@ -26,6 +38,8 @@ def create_api_key(*, name: str, scopes: list[str]) -> dict:
 
 
 def find_active_key(token: str) -> dict | None:
+    """Return the active key for a token and update its last-used timestamp."""
+
     token_hash = hash_token(token)
     conn = get_connection()
     try:
@@ -47,6 +61,8 @@ def find_active_key(token: str) -> dict | None:
 
 
 def list_api_keys() -> list[dict]:
+    """List API keys without exposing token hashes or plain tokens."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -63,6 +79,8 @@ def list_api_keys() -> list[dict]:
 
 
 def revoke_api_key(api_key_id: int) -> dict | None:
+    """Mark an API key as revoked without deleting its audit trail."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:

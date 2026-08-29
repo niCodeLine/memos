@@ -1,3 +1,5 @@
+"""Admin endpoints for creating and managing API keys."""
+
 from fastapi import APIRouter, Header, HTTPException, status
 
 from app.core.config import settings
@@ -8,6 +10,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def require_admin_token(x_admin_token: str | None) -> None:
+    """Protect local admin endpoints with the bootstrap token from `.env`."""
+
     if x_admin_token != settings.ADMIN_BOOTSTRAP_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -20,12 +24,19 @@ def create_key(
     payload: ApiKeyCreate,
     x_admin_token: str | None = Header(default=None),
 ):
+    """Create a bot/integration API key.
+
+    The plain token appears only in this response, so copy it immediately.
+    """
+
     require_admin_token(x_admin_token)
     return create_api_key(name=payload.name, scopes=payload.scopes)
 
 
 @router.get("/api-keys", response_model=list[ApiKeyOut])
 def list_keys(x_admin_token: str | None = Header(default=None)):
+    """List API keys and their status without exposing the token hash."""
+
     require_admin_token(x_admin_token)
     return list_api_keys()
 
@@ -35,6 +46,8 @@ def revoke_key(
     api_key_id: int,
     x_admin_token: str | None = Header(default=None),
 ):
+    """Revoke a key so future requests using it are rejected."""
+
     require_admin_token(x_admin_token)
     key = revoke_api_key(api_key_id)
     if key is None:

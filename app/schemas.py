@@ -1,3 +1,5 @@
+"""Pydantic models that define Memo's public API shapes."""
+
 from datetime import datetime
 from typing import Literal
 
@@ -7,11 +9,15 @@ ReminderStatus = Literal["pending", "processing", "sent", "failed", "cancelled"]
 
 
 class ApiKeyCreate(BaseModel):
+    """Request body for creating a bot/integration API key."""
+
     name: str = Field(min_length=1, max_length=80)
     scopes: list[str] = Field(default_factory=list)
 
 
 class ApiKeyCreated(BaseModel):
+    """Response returned only once after creating an API key."""
+
     id: int
     name: str
     token: str
@@ -19,6 +25,8 @@ class ApiKeyCreated(BaseModel):
 
 
 class ReminderCreate(BaseModel):
+    """Fields accepted when creating or enriching a reminder."""
+
     text: str = Field(min_length=1, max_length=300)
     remind_at: datetime | None = None
     category: str | None = Field(default=None, max_length=50)
@@ -29,6 +37,8 @@ class ReminderCreate(BaseModel):
 
 
 class ReminderUpdate(BaseModel):
+    """Patch body where every field is optional but still validated."""
+
     text: str | None = Field(default=None, min_length=1, max_length=300)
     remind_at: datetime | None = None
     category: str | None = Field(default=None, max_length=50)
@@ -41,6 +51,8 @@ class ReminderUpdate(BaseModel):
 
 
 class ReminderOut(BaseModel):
+    """Reminder shape returned by the API."""
+
     id: int
     text: str
     remind_at: datetime
@@ -56,10 +68,14 @@ class ReminderOut(BaseModel):
 
 
 class ReminderList(BaseModel):
+    """Wrapper used by list endpoints to keep responses extensible."""
+
     reminders: list[ReminderOut]
 
 
 class ReminderEnrichment(BaseModel):
+    """Suggested reminder fields returned by the enrichment endpoint."""
+
     text: str
     remind_at: datetime
     category: str | None
@@ -70,6 +86,8 @@ class ReminderEnrichment(BaseModel):
 
 
 class NotificationAttemptOut(BaseModel):
+    """One attempt made by the worker to deliver a reminder."""
+
     id: int
     reminder_id: int
     channel: str
@@ -79,10 +97,14 @@ class NotificationAttemptOut(BaseModel):
 
 
 class NotificationAttemptList(BaseModel):
+    """Wrapper for a reminder's delivery history."""
+
     attempts: list[NotificationAttemptOut]
 
 
 class ApiKeyOut(BaseModel):
+    """Safe API-key listing response that never includes secrets."""
+
     id: int
     name: str
     scopes: list[str]

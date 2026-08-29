@@ -10,6 +10,12 @@ from app.channels.base import DeliveryResult, reminder_payload
 
 
 def send(reminder: dict) -> DeliveryResult:
+    """POST the reminder payload to `delivery_target` when a URL is configured.
+
+    Without a target URL, the adapter behaves as a local demo and prints the
+    payload. That keeps Docker tests friendly without requiring an external app.
+    """
+
     target_url = reminder.get("delivery_target")
     payload = reminder_payload(reminder)
 

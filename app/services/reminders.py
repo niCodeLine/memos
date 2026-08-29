@@ -1,6 +1,13 @@
+"""Reminder service layer.
+
+Routes call these functions instead of writing SQL directly. This keeps HTTP
+concerns, database concerns and worker concerns separated enough to follow.
+"""
+
 from app.ai.enrichment import enrich_reminder
 from app.db.connection import get_connection
 
+# Shared column list used by reads and mutations that return a reminder.
 REMINDER_COLUMNS = """
     id, text, remind_at, category, urgency, channel, delivery_target,
     status, retry_count, max_retries, last_error, created_at
@@ -8,6 +15,13 @@ REMINDER_COLUMNS = """
 
 
 def create_reminder(data: dict, *, api_key_id: int | None = None) -> dict:
+    """Enrich and save a new reminder.
+
+    `api_key_id` is optional so tests or trusted local scripts can call the
+    service directly, while normal API requests still keep an audit link to the
+    key that created the reminder.
+    """
+
     enriched = enrich_reminder(data)
     conn = get_connection()
     try:
@@ -44,6 +58,8 @@ def create_reminder(data: dict, *, api_key_id: int | None = None) -> dict:
 
 
 def get_reminder(reminder_id: int) -> dict | None:
+    """Fetch one reminder by id, or return `None` when it does not exist."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -61,6 +77,8 @@ def get_reminder(reminder_id: int) -> dict | None:
 
 
 def list_reminders(status: str | None = None) -> list[dict]:
+    """List reminders, optionally filtered by state."""
+
     conn = get_connection()
     try:
         query = """
@@ -84,6 +102,12 @@ def list_reminders(status: str | None = None) -> list[dict]:
 
 
 def update_reminder(reminder_id: int, changes: dict) -> dict | None:
+    """Apply a partial update and return the updated reminder.
+
+    The route validates public input first. This function still keeps an
+    allowlist so only known database columns can be modified dynamically.
+    """
+
     allowed_fields = {
         "text",
         "remind_at",
@@ -127,6 +151,8 @@ def update_reminder(reminder_id: int, changes: dict) -> dict | None:
 
 
 def delete_reminder(reminder_id: int) -> dict | None:
+    """Delete one reminder and return what was deleted."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -146,9 +172,18 @@ def delete_reminder(reminder_id: int) -> dict | None:
 
 
 def get_due_reminders(limit: int = 25) -> list[dict]:
+    """Claim reminders that are ready for the worker to deliver.
+
+    The `FOR UPDATE SKIP LOCKED` query lets more than one worker run without
+    sending the same reminder twice. A reminder is moved to `processing` before
+    leaving this function, so the worker owns it until it marks success/failure.
+    """
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            # If a worker dies mid-delivery, processing rows should not stay
+            # stuck forever. Five minutes is a simple MVP recovery window.
             cursor.execute(
                 """
                 UPDATE reminders
@@ -189,6 +224,8 @@ def get_due_reminders(limit: int = 25) -> list[dict]:
 
 
 def mark_sent(reminder_id: int) -> None:
+    """Mark a reminder as successfully delivered."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -209,6 +246,8 @@ def mark_sent(reminder_id: int) -> None:
 
 
 def mark_delivery_failed(reminder_id: int, error: str) -> None:
+    """Record a failed delivery and either retry later or mark as failed."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -235,6 +274,8 @@ def mark_delivery_failed(reminder_id: int, error: str) -> None:
 def record_attempt(
     *, reminder_id: int, channel: str, success: bool, error: str | None = None
 ) -> None:
+    """Store one worker delivery attempt for debugging and audit history."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
@@ -253,6 +294,8 @@ def record_attempt(
 
 
 def list_attempts(reminder_id: int) -> list[dict]:
+    """Return delivery attempts for a reminder, newest first."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:

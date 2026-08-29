@@ -1,3 +1,9 @@
+"""Database schema creation for the local-first MVP.
+
+For now Memo uses `ensure_schema()` instead of Alembic migrations. That keeps the
+project simple to run from Docker while still making the tables explicit.
+"""
+
 from app.db.connection import get_connection
 
 SCHEMA_SQL = """
@@ -41,6 +47,9 @@ CREATE TABLE IF NOT EXISTS reminders (
 CREATE INDEX IF NOT EXISTS idx_reminders_due
 ON reminders (status, remind_at);
 
+-- These ALTER statements make the bootstrap safe for older local databases.
+-- They are not a replacement for real migrations, but they are friendly for a
+-- portfolio/demo project that may be run repeatedly while evolving.
 ALTER TABLE reminders
 ADD COLUMN IF NOT EXISTS delivery_target TEXT;
 
@@ -68,6 +77,8 @@ CREATE TABLE IF NOT EXISTS notification_attempts (
 
 
 def ensure_schema() -> None:
+    """Create or update the minimum schema needed by the API and worker."""
+
     conn = get_connection()
     try:
         with conn.cursor() as cursor:

@@ -1,7 +1,20 @@
+"""Application settings loaded from environment variables.
+
+This module keeps configuration in one place so the rest of the project does not
+need to know whether values came from `.env`, Docker Compose, or the shell.
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Runtime configuration for the API and worker.
+
+    Pydantic reads these fields from environment variables. The defaults are
+    local-development friendly, while secrets and database values should come
+    from `.env` or Docker Compose.
+    """
+
     APP_NAME: str = "Memo"
     APP_ENV: str = "local"
     API_HOST: str = "0.0.0.0"
@@ -29,6 +42,8 @@ class Settings(BaseSettings):
 
     @property
     def postgres_dsn(self) -> str:
+        """Build the connection string expected by psycopg2."""
+
         return (
             f"host={self.POSTGRES_HOST} "
             f"dbname={self.POSTGRES_DB} "
@@ -38,4 +53,5 @@ class Settings(BaseSettings):
         )
 
 
+# Imported by the API, services and worker so they all share the same config.
 settings = Settings()

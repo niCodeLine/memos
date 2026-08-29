@@ -8,6 +8,11 @@ from app.channels.base import DeliveryResult, reminder_payload
 
 
 def send(reminder: dict) -> DeliveryResult:
+    """Demo Alexa sender. Replace this body with real platform code.
+
+    `delivery_target` can identify a routine, skill or bridge.
+    """
+
     payload = reminder_payload(reminder)
     target = reminder.get("delivery_target") or "demo-alexa-target"
 

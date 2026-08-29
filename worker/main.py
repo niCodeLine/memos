@@ -1,3 +1,9 @@
+"""Background worker that delivers due reminders.
+
+The API saves reminders. This process is the part that keeps checking the clock,
+claims due reminders, sends them through a channel, and records what happened.
+"""
+
 import time
 
 from app.channels.dispatcher import send_reminder
@@ -12,6 +18,8 @@ from app.services.reminders import (
 
 
 def run_once() -> int:
+    """Process one batch of due reminders and return how many were claimed."""
+
     reminders = get_due_reminders()
     for reminder in reminders:
         result = send_reminder(reminder)
@@ -32,6 +40,8 @@ def run_once() -> int:
 
 
 def main() -> None:
+    """Run the worker forever with a simple polling loop."""
+
     ensure_schema()
     while True:
         processed = run_once()

@@ -1,3 +1,5 @@
+"""Endpoints for AI-ready reminder enrichment."""
+
 from fastapi import APIRouter, Depends
 
 from app.ai.enrichment import enrich_reminder
@@ -12,4 +14,6 @@ def enrich(
     payload: ReminderCreate,
     api_key: dict = Depends(require_scope("reminders:write")),
 ):
+    """Suggest reminder fields without saving anything to the database."""
+
     return enrich_reminder(payload.model_dump())

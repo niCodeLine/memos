@@ -1,3 +1,5 @@
+"""HTTP endpoints for reminder CRUD and delivery-attempt inspection."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.dependencies import require_scope
@@ -20,6 +22,8 @@ from app.services.reminders import (
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
+# These fields are allowed in PATCH, but they must not be explicitly set to
+# null. Optional fields like category and delivery_target can be cleared.
 NON_NULL_UPDATE_FIELDS = {
     "text",
     "remind_at",
@@ -36,6 +40,8 @@ def create(
     payload: ReminderCreate,
     api_key: dict = Depends(require_scope("reminders:write")),
 ):
+    """Create a reminder owned by the API key that made the request."""
+
     return create_reminder(payload.model_dump(), api_key_id=api_key["id"])
 
 
@@ -44,6 +50,8 @@ def list_all(
     status: ReminderStatus | None = Query(default=None),
     api_key: dict = Depends(require_scope("reminders:read")),
 ):
+    """List reminders, optionally filtered by status."""
+
     return {"reminders": list_reminders(status=status)}
 
 
@@ -52,6 +60,8 @@ def get_one(
     reminder_id: int,
     api_key: dict = Depends(require_scope("reminders:read")),
 ):
+    """Return one reminder or a clean 404 response."""
+
     reminder = get_reminder(reminder_id)
     if reminder is None:
         raise HTTPException(
@@ -67,6 +77,12 @@ def update(
     payload: ReminderUpdate,
     api_key: dict = Depends(require_scope("reminders:write")),
 ):
+    """Partially update a reminder.
+
+    Empty PATCH bodies and accidental nulls for required fields are rejected so
+    clients get a useful error instead of silently producing odd data.
+    """
+
     changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(
@@ -97,6 +113,8 @@ def delete(
     reminder_id: int,
     api_key: dict = Depends(require_scope("reminders:write")),
 ):
+    """Delete a reminder and return the deleted row."""
+
     reminder = delete_reminder(reminder_id)
     if reminder is None:
         raise HTTPException(
@@ -111,6 +129,8 @@ def attempts(
     reminder_id: int,
     api_key: dict = Depends(require_scope("reminders:read")),
 ):
+    """Show the worker delivery history for one reminder."""
+
     reminder = get_reminder(reminder_id)
     if reminder is None:
         raise HTTPException(
