@@ -1,30 +1,12 @@
 .DS_Store
-
-# Local environment
 .env
 .venv/
 venv/
-
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
+*.log
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
-# Logs
-*.log
-api.log
-
-# Local assistant runtime state
-.adk/
-assistant/.adk/
-
-# Local editor/project files
-.vscode/
-.idea/
-
-# Local database/cache artifacts
-*.sqlite3
-*.db
+postgres_data/
+redis_data/

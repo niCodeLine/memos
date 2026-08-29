@@ -1,35 +1,44 @@
-# Remi Base
+# Memo
 
-Self-hosted reminders API built for quick capture, local storage and optional
-assistant access. FastAPI, PostgreSQL and Redis, kept intentionally small.
+Self-hosted reminder platform for assistants, bots and local automations.
+FastAPI, PostgreSQL, Redis, workers and pluggable delivery channels.
 
-Remi started as a simple place to save reminders from an API or a virtual
-assistant. The base is deliberately plain: store the reminder well first, then
-let other projects decide how to notify, automate or extend it.
-
-## Versions
-
-- `main` — API + optional assistant layer.
-- `basic` — API, PostgreSQL and Redis only, without the assistant layer.
+Memo builds on the smaller Remi API base. Remi stores reminders; Memo adds the
+pieces needed to make reminders move: API keys, background workers, notification
+attempts and channel adapters.
 
 ## Features
 
-- Quick reminder capture through a REST API.
-- PostgreSQL-backed storage.
-- Optional Redis cache for repeated reads.
-- Basic CRUD operations for reminders.
-- Date validation for impossible month/day combinations.
-- Small assistant layer that calls the same backend logic as the API.
-- Docker Compose file for local PostgreSQL and Redis.
-- Unit tests for routes and service behavior.
+- FastAPI backend for reminders.
+- PostgreSQL as the source of truth.
+- Redis included for future cache, queues or distributed locks.
+- Docker Compose installation for API, worker, PostgreSQL and Redis.
+- Admin bootstrap token for local setup.
+- API keys for bots and integrations.
+- Reminder model with `remind_at`, category, urgency, channel, delivery target
+  and status.
+- CRUD operations for reminders.
+- Worker that polls due reminders and dispatches notifications.
+- Worker retries with `retry_count`, `max_retries` and `last_error`.
+- Channel adapter structure with small examples for webhook, Telegram, email
+  and Alexa.
+- AI-ready enrichment endpoint for urgency, category, channel and time
+  suggestions.
+
+## Reminder states
+
+Memo uses a small state machine:
+
+- `pending` — saved and waiting.
+- `processing` — claimed by the worker.
+- `sent` — delivered successfully.
+- `failed` — delivery failed after all retries.
+- `cancelled` — intentionally stopped.
+
+The worker retries failed delivery attempts up to `max_retries`. Failed
+reminders can be listed and manually moved back to `pending` if needed.
 
 ## Quick Start
-
-Install Python dependencies:
-
-```bash
-pip install -r requirements.txt
-```
 
 Create a local environment file:
 
@@ -37,96 +46,167 @@ Create a local environment file:
 cp .env.example .env
 ```
 
-Start PostgreSQL and Redis with Docker:
+Start the full local stack:
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
-Run the API:
-
-```bash
-uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Open:
+Open the API docs:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-## Configuration
+## API keys
 
-Default `.env.example` values match the included `docker-compose.yml`.
+Create an API key using the admin bootstrap token from `.env`:
 
-```text
-POSTGRES_HOST=localhost
-POSTGRES_DB=reminders
-POSTGRES_USER=reminders_user
-POSTGRES_PASSWORD=reminders_password
-POSTGRES_PORT=5432
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
+```bash
+curl -X POST "http://127.0.0.1:8000/admin/api-keys" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Token: change-me-local-admin-token" \
+  -d '{"name": "local-bot", "scopes": ["reminders:write", "reminders:read"]}'
 ```
 
-PostgreSQL is required. Redis is used as cache; the API is designed to keep
-working from PostgreSQL if Redis is unavailable.
+Use the returned token as `X-API-Key`.
 
-## API
+List API keys:
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/` | Health check |
-| POST | `/reminders/` | Create a reminder |
-| GET | `/reminders/` | List or filter reminders |
-| GET | `/reminders/{id}` | Get one reminder |
-| PATCH | `/reminders/{id}` | Update a reminder |
-| DELETE | `/reminders/{id}` | Delete a reminder |
+```bash
+curl "http://127.0.0.1:8000/admin/api-keys" \
+  -H "X-Admin-Token: change-me-local-admin-token"
+```
 
-Example:
+Revoke an API key:
+
+```bash
+curl -X PATCH "http://127.0.0.1:8000/admin/api-keys/1/revoke" \
+  -H "X-Admin-Token: change-me-local-admin-token"
+```
+
+## AI enrichment
+
+The enrichment endpoint does not create a reminder. It suggests fields that can
+be used before saving one.
+
+```bash
+curl -X POST "http://127.0.0.1:8000/ai/enrich-reminder" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: paste-token-here" \
+  -d '{"text": "urgente llamar al dentista"}'
+```
+
+## Reminder examples
+
+Create a reminder:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/reminders/" \
   -H "Content-Type: application/json" \
-  -d '{"day": 14, "month": 4, "text": "Juanito birthday"}'
+  -H "X-API-Key: paste-token-here" \
+  -d '{
+    "text": "Call the dentist",
+    "remind_at": "2026-07-24T09:00:00+02:00",
+    "category": "health",
+    "channel": "webhook",
+    "delivery_target": "https://example.com/my-reminder-webhook"
+  }'
 ```
 
-## Assistant
+List reminders:
 
-The assistant layer lives in `assistant/`.
+```bash
+curl "http://127.0.0.1:8000/reminders/" \
+  -H "X-API-Key: paste-token-here"
+```
 
-`assistant/agent.py` defines Remi, and `assistant/tools.py` exposes the reminder
-operations as assistant-callable tools. The assistant does not own the reminder
-logic; it calls the same service layer used by the API.
+Get one reminder:
 
-This keeps the project usable in two ways:
+```bash
+curl "http://127.0.0.1:8000/reminders/1" \
+  -H "X-API-Key: paste-token-here"
+```
 
-- as a regular reminders API;
-- as a small backend for a virtual assistant.
+Update a reminder:
 
-For the API-only version, use the `basic` branch.
+```bash
+curl -X PATCH "http://127.0.0.1:8000/reminders/1" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: paste-token-here" \
+  -d '{"status": "cancelled"}'
+```
 
-## Structure
+Delete a reminder:
+
+```bash
+curl -X DELETE "http://127.0.0.1:8000/reminders/1" \
+  -H "X-API-Key: paste-token-here"
+```
+
+View worker delivery attempts:
+
+```bash
+curl "http://127.0.0.1:8000/reminders/1/attempts" \
+  -H "X-API-Key: paste-token-here"
+```
+
+List failed reminders:
+
+```bash
+curl "http://127.0.0.1:8000/reminders/?status=failed" \
+  -H "X-API-Key: paste-token-here"
+```
+
+## Channels
+
+The channel adapters are intentionally small.
+
+- `webhook.py` is the neutral example. If a `delivery_target` URL is provided,
+  the worker sends the reminder payload there.
+- `telegram.py`, `email.py` and `alexa.py` are tiny placeholders. They print a
+  demo message and return success so the local worker flow can be tested, but
+  they do not contact those services until someone replaces the demo function.
+
+## Architecture
 
 ```text
-api/
-  main.py              FastAPI application setup
-  routes/reminders.py  HTTP endpoints
-  services_db.py       PostgreSQL reminder operations
-  services_redis.py    Redis cache helpers
-  schemas.py           Request validation models
-  exceptions.py        Project-specific errors
-  setup/               Database/table setup helpers
+assistant / bot / client
+        ↓
+FastAPI API
+        ↓
+PostgreSQL
+        ↓
+worker
+        ↓
+channel adapter
+        ↓
+Telegram / email / webhook / Alexa / etc.
+```
 
-assistant/
-  agent.py             Optional virtual assistant definition
-  tools.py             Assistant tool wrappers
+Redis is included in the Docker stack and ready for cache, queues or distributed
+locks. The current MVP uses PostgreSQL for worker claiming because it keeps the
+first complete version easier to run and understand.
+
+## Project structure
+
+```text
+app/
+  main.py              FastAPI app
+  core/                settings and security
+  db/                  PostgreSQL connection and schema setup
+  routers/             HTTP endpoints
+  services/            domain logic
+  channels/            delivery adapters
+  ai/                  enrichment hooks
+
+worker/
+  main.py              background reminder worker
 
 tests/
-  test_routes.py       API route tests
-  test_services.py     Service-level tests
+  test_channels.py
+  test_enrichment.py
+  test_security.py
 ```
 
 ## Tests
@@ -135,20 +215,17 @@ tests/
 python -m unittest discover -v
 ```
 
-The tests mock database operations where needed, so they do not require a
-running PostgreSQL or Redis instance.
+## Current status
+
+This is the first complete MVP shape for Memo. It is intentionally friendly to
+modify: the API, worker and database are ready, while the delivery channels are
+small examples meant to be replaced or extended.
 
 ## Roadmap
 
-This repository is the base layer. A larger reminder platform can build on top
-of it with:
-
-- Docker installation for the full application;
-- background workers for due reminders;
-- users, profiles and a local admin;
-- API keys for bots and assistant integrations;
-- delivery channels such as Telegram, email, webhooks or Alexa;
-- AI-assisted urgency, channel and time suggestions.
-
-See [docs/NEXT_PROJECT.md](docs/NEXT_PROJECT.md) for the possible expansion.
-
+- Webhook signing.
+- Stronger examples for custom channel adapters.
+- User profiles and per-user timezone.
+- Redis-backed locks or queues if the worker grows.
+- Real AI extraction and enrichment from natural language.
+- Assistant integration using tool calls.

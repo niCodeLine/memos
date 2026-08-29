@@ -1,32 +1,59 @@
 services:
+  api:
+    build: .
+    container_name: remi_api
+    env_file: .env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    container_name: remi_worker
+    env_file: .env
+    command: python -m worker.main
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   postgres:
     image: postgres:16
-    container_name: reminders_postgres
+    container_name: remi_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: reminders
-      POSTGRES_USER: reminders_user
-      POSTGRES_PASSWORD: reminders_password
+      POSTGRES_DB: remi
+      POSTGRES_USER: remi_user
+      POSTGRES_PASSWORD: remi_password
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reminders_user -d reminders"]
+      test: ["CMD-SHELL", "pg_isready -U remi_user -d remi"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7
-    container_name: reminders_redis
+    container_name: remi_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
 
 volumes:
   postgres_data:
   redis_data:
-

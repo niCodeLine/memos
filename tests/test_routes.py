@@ -1,74 +1,96 @@
-from types import SimpleNamespace
+from datetime import datetime, timezone
+import os
 from unittest import TestCase
 from unittest.mock import patch
 
+os.environ.setdefault("ADMIN_BOOTSTRAP_TOKEN", "test-admin-token")
+os.environ.setdefault("POSTGRES_HOST", "postgres")
+os.environ.setdefault("POSTGRES_DB", "remi")
+os.environ.setdefault("POSTGRES_USER", "remi_user")
+os.environ.setdefault("POSTGRES_PASSWORD", "remi_password")
+
 from fastapi.testclient import TestClient
 
-from api.exceptions import ReminderNotFound
-from api.main import app
+from app.main import app
+
+
+client = TestClient(app)
+
+
+def reminder_payload(reminder_id=1):
+    return {
+        "id": reminder_id,
+        "text": "Call the dentist",
+        "remind_at": datetime(2026, 7, 24, 9, 0, tzinfo=timezone.utc),
+        "category": "health",
+        "urgency": "normal",
+        "channel": "webhook",
+        "delivery_target": None,
+        "status": "pending",
+        "retry_count": 0,
+        "max_retries": 3,
+        "last_error": None,
+        "created_at": datetime(2026, 7, 23, 9, 0, tzinfo=timezone.utc),
+    }
+
+
+def api_key():
+    return {"id": 1, "name": "test-key", "scopes": ["*"]}
 
 
 class ReminderRouteTests(TestCase):
-    def setUp(self):
-        self.client = TestClient(app)
-
-    @patch("api.routes.reminders.services_db.create")
-    def test_create_returns_201(self, create):
-        create.return_value = SimpleNamespace(
-            message="Reminder created.",
-            reminder={
-                "reminder_id": 1,
-                "day": 14,
-                "month": 4,
-                "month_name": "April",
-                "text": "Birthday",
-                "created_at": "2026-06-28T12:00:00",
-            },
+    @patch("app.dependencies.find_active_key", return_value=api_key())
+    def test_invalid_status_filter_returns_422(self, _):
+        response = client.get(
+            "/reminders/?status=banana",
+            headers={"X-API-Key": "test-token"},
         )
 
-        response = self.client.post(
-            "/reminders/",
-            json={"day": 14, "month": 4, "text": "Birthday"},
+        self.assertEqual(response.status_code, 422)
+
+    @patch("app.dependencies.find_active_key", return_value=api_key())
+    def test_empty_patch_returns_422(self, _):
+        response = client.patch(
+            "/reminders/1",
+            headers={"X-API-Key": "test-token"},
+            json={},
         )
 
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json()["reminder"]["reminder_id"], 1)
-
-    @patch("api.routes.reminders.services_db.get_by_id")
-    def test_missing_reminder_returns_404(self, get_by_id):
-        get_by_id.side_effect = ReminderNotFound(
-            "Reminder with id 99 not found."
-        )
-
-        response = self.client.get("/reminders/99")
-
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 422)
         self.assertEqual(
             response.json()["detail"],
-            "Reminder with id 99 not found.",
+            "At least one field must be provided.",
         )
 
-    def test_invalid_request_body_returns_422(self):
-        response = self.client.post(
-            "/reminders/",
-            json={"day": 32, "month": 4, "text": ""},
+    @patch("app.dependencies.find_active_key", return_value=api_key())
+    def test_null_required_update_field_returns_422(self, _):
+        response = client.patch(
+            "/reminders/1",
+            headers={"X-API-Key": "test-token"},
+            json={"text": None},
         )
 
         self.assertEqual(response.status_code, 422)
+        self.assertIn("text", response.json()["detail"])
 
-    def test_empty_patch_returns_422(self):
-        response = self.client.patch("/reminders/1", json={})
-
-        self.assertEqual(response.status_code, 422)
-
-    @patch("api.routes.reminders.services_db.get")
-    def test_empty_collection_is_successful(self, get_reminders):
-        get_reminders.return_value = SimpleNamespace(
-            message="0 reminder(s) found.",
-            reminders=[],
+    @patch("app.routers.reminders.get_reminder", return_value=None)
+    @patch("app.dependencies.find_active_key", return_value=api_key())
+    def test_attempts_for_missing_reminder_returns_404(self, _, __):
+        response = client.get(
+            "/reminders/99/attempts",
+            headers={"X-API-Key": "test-token"},
         )
 
-        response = self.client.get("/reminders/")
+        self.assertEqual(response.status_code, 404)
+
+    @patch("app.routers.reminders.list_attempts", return_value=[])
+    @patch("app.routers.reminders.get_reminder", return_value=reminder_payload())
+    @patch("app.dependencies.find_active_key", return_value=api_key())
+    def test_attempts_for_existing_reminder_returns_list(self, _, __, ___):
+        response = client.get(
+            "/reminders/1/attempts",
+            headers={"X-API-Key": "test-token"},
+        )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["reminders"], [])
+        self.assertEqual(response.json(), {"attempts": []})
