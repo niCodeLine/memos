@@ -39,6 +39,24 @@ def api_key():
 
 
 class ReminderRouteTests(TestCase):
+
+    def test_missing_api_key_returns_401(self):
+        response = client.get("/reminders/")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Missing X-API-Key header.")
+
+    @patch("app.dependencies.find_active_key", return_value={"id": 1, "name": "read-only", "scopes": ["reminders:read"]})
+    def test_missing_write_scope_returns_403(self, _):
+        response = client.post(
+            "/reminders/",
+            headers={"X-API-Key": "read-only-token"},
+            json={"text": "Call the dentist"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("reminders:write", response.json()["detail"])
+
     @patch("app.dependencies.find_active_key", return_value=api_key())
     def test_invalid_status_filter_returns_422(self, _):
         response = client.get(
